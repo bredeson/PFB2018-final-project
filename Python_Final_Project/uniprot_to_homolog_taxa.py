@@ -3,6 +3,7 @@
 import sys
 
 query_file_name = sys.argv[1]
+output_file_name = sys.argv[2]
 
 query_list = list()
 
@@ -73,8 +74,11 @@ for uniprot_id in query_list:
     except KeyError:
         print('Can not find',uniprot_id,'in ortho db')
         continue
-    OGlist = odb_to_OGset[odb]
-
+    try:
+        OGlist = odb_to_OGset[odb]
+    except KeyError:
+        print('Can not find an OG for',odb)
+        continue
     for OG in OGlist:
         odbList = OG_to_odbSet[OG]
 
@@ -85,7 +89,9 @@ for uniprot_id in query_list:
 
 # the homologs for each entry in the input file are found and the taxa from these homologs are written to an output file
 
-with open('output.tab' , 'w') as outputFile:
+masterset = set()
+
+with open(output_file_name , 'w') as outputFile:
     for uniprot_ID in uniprot_to_homologs:
         mapped_odbs = uniprot_to_homologs[uniprot_ID]
 
@@ -96,11 +102,20 @@ with open('output.tab' , 'w') as outputFile:
             mapped_odb_list.append(taxa)
 
         mapped_odb_set = set(mapped_odb_list)
-
-        mapped_odb_list = list(mapped_odb_set)
+        masterset = masterset.union(mapped_odb_set)
         
-        mapped_odb_str = str(mapped_odb_list)
-            
+        mapped_odb_str = ''
+
+        for item in mapped_odb_set:
+            mapped_odb_str += item + ','
+
+        mapped_odb_str = mapped_odb_str.rstrip(',')
+        
         outputFile.write(uniprot_ID+'\t'+mapped_odb_str+'\n')
             
-    
+with open('all_taxa_output_SP.txt','w') as outMaster:
+    masterstr = ''
+    for taxa in masterset:
+        masterstr += taxa + ','
+    masterstr = masterstr.rstrip(',')
+    outMaster.write(masterstr)
